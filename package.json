@@ -1,0 +1,25 @@
+{
+  "name": "droiddeck",
+  "version": "1.0.0",
+  "description": "DroidDeck - Android Desktop Control Suite featuring Android gradient styling, file transfers, and device controls",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "build:exe": "electron-packager . DroidDeck --platform=win32 --arch=x64 --out=dist --overwrite --prune=true --ignore=\"^(dist|\\.git|scrcpy-4\\.1)\""
+  },
+  "keywords": [
+    "droiddeck",
+    "android",
+    "scrcpy",
+    "gui",
+    "file-transfer",
+    "device-controls",
+    "electron"
+  ],
+  "author": "Antigravity",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-packager": "^17.1.2"
+  }
+}
