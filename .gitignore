@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Production / Executable builds
+dist/
+
+# Upstream source code (if present)
+scrcpy-4.1/
+
+# Logs & Debugging
+*.log
+npm-debug.log*
+
+# Environment and OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editors
+.vscode/
+.idea/
