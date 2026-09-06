@@ -25,6 +25,24 @@
         <span class="device-dot" id="header-live-dot"></span>
         <span class="device-title" id="top-device-name">No Device Connected</span>
         <span class="device-badge" id="top-device-badge">OFFLINE</span>
+        <span class="device-spec-pill hidden" id="top-battery-pill" title="Battery Level">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="16" height="10" rx="2" ry="2"></rect>
+            <line x1="22" y1="11" x2="22" y2="13"></line>
+          </svg>
+          <span id="top-battery-text">--%</span>
+        </span>
+        <span class="device-spec-pill hidden" id="top-os-pill" title="Android Version">
+          <span id="top-os-text">Android</span>
+        </span>
+        <button id="btn-device-info" class="btn-pill-info hidden" title="View Device Specifications">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Specs</span>
+        </button>
       </div>
 
       <div class="topbar-right">
@@ -259,6 +277,38 @@
         </div>
       </section>
 
+      <!-- Module 4: Live Embedded Screen Preview (Optional quick snapshot/stream view) -->
+      <section class="card card-preview" id="section-preview">
+        <div class="card-header">
+          <div class="preview-header-left">
+            <span class="card-title">Screen Preview</span>
+            <span class="preview-live-tag" id="preview-live-tag">IDLE</span>
+          </div>
+          <div class="preview-header-actions">
+            <button id="btn-refresh-preview" class="btn-preview-action" title="Refresh Screen Snapshot">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+            <label class="preview-auto-label" title="Auto-refresh snapshot every 2 seconds">
+              <input type="checkbox" id="toggle-auto-preview" class="preview-auto-chk" />
+              <span>Live</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="preview-container" id="preview-container">
+          <div class="preview-placeholder" id="preview-placeholder">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            <span>No Screen Stream</span>
+          </div>
+          <img id="preview-img" class="preview-image hidden" alt="Screen Preview" />
+        </div>
+      </section>
+
     </main>
 
     <!-- Bottom Action Bar -->
@@ -289,6 +339,56 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Device Specifications Modal -->
+  <div id="device-info-modal" class="modal-backdrop hidden">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-title-row">
+        <span class="modal-tag">Device Specifications</span>
+        <h3 id="modal-info-title" class="modal-title">Hardware & System</h3>
+      </div>
+      
+      <div class="device-specs-grid" id="specs-grid">
+        <div class="spec-card">
+          <span class="spec-lbl">Manufacturer</span>
+          <span class="spec-val" id="spec-manufacturer">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Model / Brand</span>
+          <span class="spec-val" id="spec-model">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Android Version</span>
+          <span class="spec-val" id="spec-android">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Architecture</span>
+          <span class="spec-val" id="spec-abi">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Battery Status</span>
+          <span class="spec-val" id="spec-battery">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Display Resolution</span>
+          <span class="spec-val" id="spec-display">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Storage (Internal)</span>
+          <span class="spec-val" id="spec-storage">--</span>
+        </div>
+        <div class="spec-card">
+          <span class="spec-lbl">Wi-Fi IP Address</span>
+          <span class="spec-val" id="spec-ip">--</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-copy-ip" class="btn btn-secondary btn-sm hidden">Use IP for Wireless</button>
+        <button id="btn-close-specs" class="btn btn-primary">Close</button>
+      </div>
+    </div>
   </div>
 
   <!-- Minimal Modal Alert -->

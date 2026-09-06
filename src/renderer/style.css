@@ -176,6 +176,47 @@ body {
   border: 1px solid var(--purple-border);
 }
 
+.device-spec-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.device-spec-pill.charging {
+  color: #a7f3d0;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.btn-pill-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background: var(--purple-subtle);
+  color: #c084fc;
+  border: 1px solid var(--purple-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-pill-info:hover {
+  background: var(--purple-hover);
+  color: #ffffff;
+  border-color: var(--purple-primary);
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -282,16 +323,16 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto;
   gap: 10px;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Default / Compact Window (CMD size ~740x530):
-   Column 1: card-connection + card-transfer
-   Column 2: card-display (stretching full height) */
+/* Default / Compact Window (CMD size ~760x530):
+   Column 1: card-connection, card-transfer
+   Column 2: card-display, card-preview */
 .card-connection {
   grid-column: 1;
   grid-row: 1;
@@ -306,16 +347,23 @@ body {
 
 .card-display {
   grid-column: 2;
-  grid-row: 1 / span 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-preview {
+  grid-column: 2;
+  grid-row: 2;
   display: flex;
   flex-direction: column;
 }
 
 /* Fullscreen / Widescreen Mode (> 1060px):
-   Auto-organizes into 3 balanced side-by-side columns! No empty dead space! */
+   Auto-organizes into 4 balanced columns without empty dead space! */
 @media (min-width: 1060px) {
   .app-main {
-    grid-template-columns: 1fr 1.15fr 1fr;
+    grid-template-columns: 1fr 1.1fr 1fr 0.9fr;
     grid-template-rows: 1fr;
   }
 
@@ -333,13 +381,18 @@ body {
     grid-column: 3;
     grid-row: 1;
   }
+
+  .card-preview {
+    grid-column: 4;
+    grid-row: 1;
+  }
 }
 
-/* Small / Narrow screens (< 640px) */
-@media (max-width: 640px) {
+/* Small / Narrow screens (< 680px) */
+@media (max-width: 680px) {
   .app-main {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto auto auto;
   }
 
   .card-connection {
@@ -355,6 +408,11 @@ body {
   .card-transfer {
     grid-column: 1;
     grid-row: 3;
+  }
+
+  .card-preview {
+    grid-column: 1;
+    grid-row: 4;
   }
 }
 
@@ -934,6 +992,156 @@ body {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+}
+
+/* ==========================================================================
+   Screen Preview Module
+   ========================================================================== */
+
+.card-preview {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-live-tag {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-input);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-subtle);
+}
+
+.preview-live-tag.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-preview-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-secondary);
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-preview-action:hover {
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+.preview-auto-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.preview-auto-chk {
+  accent-color: var(--purple-primary);
+  cursor: pointer;
+}
+
+.preview-container {
+  flex: 1;
+  min-height: 120px;
+  background: #030305;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 170px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-xs);
+  transition: opacity 0.2s ease;
+}
+
+/* ==========================================================================
+   Device Specifications Modal
+   ========================================================================== */
+
+.modal-box-wide {
+  max-width: 520px;
+}
+
+.modal-box-wide .modal-tag {
+  background: var(--purple-subtle);
+  color: #c084fc;
+}
+
+.device-specs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.spec-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spec-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+}
+
+.spec-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .icon-refresh.spinning {

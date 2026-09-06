@@ -113,6 +113,15 @@ ipcMain.handle('take-screenshot', async (event, { serial }) => {
   return adb.takeScreenshot(serial, picturesDir);
 });
 
+// IPC: Device Specifications & Live Screen Preview
+ipcMain.handle('get-device-info', async (event, { serial }) => {
+  return adb.getDeviceInfo(serial);
+});
+
+ipcMain.handle('get-screen-preview', async (event, { serial }) => {
+  return adb.getScreenPreview(serial);
+});
+
 // IPC: Select files via dialog
 ipcMain.handle('open-file-dialog', async (event, options = {}) => {
   return dialog.showOpenDialog(mainWindow, {

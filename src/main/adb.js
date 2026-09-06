@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { findExecutable } = require('./paths');
@@ -195,6 +195,160 @@ async function installApk(serial, localApkPath) {
 }
 
 /**
+ * Get detailed device specifications and status (battery, OS, display, storage, IP)
+ */
+async function getDeviceInfo(serial) {
+  const adb = await getAdbPath();
+  const args = [];
+  if (serial && serial !== 'auto') {
+    args.push('-s', serial);
+  }
+  
+  // Clean single-line command for Android shell
+  const shellCmd = "echo ===PROPS=== && getprop ro.product.manufacturer && getprop ro.product.model && getprop ro.product.brand && getprop ro.build.version.release && getprop ro.build.version.sdk && getprop ro.product.cpu.abi && echo ===BATTERY=== && dumpsys battery && echo ===DISPLAY=== && wm size && wm density && echo ===STORAGE=== && df -h /data && echo ===NETWORK=== && ip -o -4 addr show wlan0";
+  args.push('shell', shellCmd);
+
+  return new Promise((resolve, reject) => {
+    execFile(adb, args, { windowsHide: true }, (error, stdout) => {
+      if (error && !stdout) {
+        return reject(new Error(error.message));
+      }
+
+      const raw = stdout || '';
+      const sections = {};
+      let currentSec = 'INIT';
+      raw.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('===') && trimmed.endsWith('===')) {
+          currentSec = trimmed.replace(/=/g, '');
+          sections[currentSec] = [];
+        } else if (currentSec) {
+          if (!sections[currentSec]) sections[currentSec] = [];
+          sections[currentSec].push(trimmed);
+        }
+      });
+
+      // Parse Props
+      const props = sections['PROPS'] || [];
+      const manufacturer = props[0] || '';
+      const model = props[1] || '';
+      const brand = props[2] || '';
+      const androidVersion = props[3] || 'Unknown';
+      const sdk = props[4] || '';
+      const abi = props[5] || '';
+
+      // Parse Battery
+      let batteryLevel = 0;
+      let isCharging = false;
+      let batteryStatus = 'Unknown';
+      (sections['BATTERY'] || []).forEach(line => {
+        if (line.includes('level:')) {
+          batteryLevel = parseInt(line.split(':')[1].trim(), 10) || 0;
+        } else if (line.includes('status:')) {
+          const st = parseInt(line.split(':')[1].trim(), 10);
+          // 2 = Charging, 3 = Discharging, 4 = Not charging, 5 = Full
+          if (st === 2 || st === 5) isCharging = true;
+          batteryStatus = st === 2 ? 'Charging' : (st === 5 ? 'Full' : 'Discharging');
+        } else if (line.includes('AC powered: true') || line.includes('USB powered: true') || line.includes('Wireless powered: true')) {
+          isCharging = true;
+        }
+      });
+
+      // Parse Display
+      let resolution = 'Unknown';
+      let density = '';
+      (sections['DISPLAY'] || []).forEach(line => {
+        if (line.toLowerCase().includes('size:')) {
+          const parts = line.split(':');
+          if (parts[1]) resolution = parts[1].trim();
+        } else if (line.toLowerCase().includes('density:')) {
+          const parts = line.split(':');
+          if (parts[1]) density = parts[1].trim();
+        }
+      });
+
+      // Parse Storage
+      let storageUsed = '';
+      let storageAvail = '';
+      let storageSize = '';
+      let storagePercent = '';
+      const storageLines = sections['STORAGE'] || [];
+      if (storageLines.length > 1) {
+        const lastLine = storageLines[storageLines.length - 1];
+        const parts = lastLine.split(/\s+/);
+        if (parts.length >= 5) {
+          storageSize = parts[1];
+          storageUsed = parts[2];
+          storageAvail = parts[3];
+          storagePercent = parts[4];
+        }
+      }
+
+      // Parse IP
+      let ip = '';
+      const netLines = sections['NETWORK'] || [];
+      for (const line of netLines) {
+        const match = line.match(/inet\s+(\d+\.\d+\.\d+\.\d+)/);
+        if (match) {
+          ip = match[1];
+          break;
+        }
+      }
+
+      resolve({
+        manufacturer: manufacturer ? manufacturer.charAt(0).toUpperCase() + manufacturer.slice(1) : '',
+        model: model || 'Android Device',
+        brand: brand ? brand.toUpperCase() : '',
+        androidVersion,
+        sdk,
+        abi,
+        battery: {
+          level: batteryLevel,
+          charging: isCharging,
+          status: batteryStatus
+        },
+        display: {
+          resolution,
+          density
+        },
+        storage: {
+          size: storageSize,
+          used: storageUsed,
+          available: storageAvail,
+          percent: storagePercent
+        },
+        network: {
+          ip
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Capture quick screen snapshot as base64 JPEG/PNG for live preview card
+ */
+async function getScreenPreview(serial) {
+  const adb = await getAdbPath();
+  const serialFlag = serial && serial !== 'auto' ? `-s ${serial}` : '';
+
+  return new Promise((resolve, reject) => {
+    // Exec-out screencap produces raw PNG stream directly to buffer
+    exec(`"${adb}" ${serialFlag} exec-out screencap -p`, {
+      encoding: 'buffer',
+      maxBuffer: 15 * 1024 * 1024,
+      windowsHide: true
+    }, (error, stdout) => {
+      if (error || !stdout || stdout.length < 100) {
+        return reject(new Error(error ? error.message : 'Failed to capture screen preview'));
+      }
+      const base64 = stdout.toString('base64');
+      resolve(`data:image/png;base64,${base64}`);
+    });
+  });
+}
+
+/**
  * Capture screenshot and save to user's Pictures or Downloads folder
  */
 async function takeScreenshot(serial, destFolder) {
@@ -225,5 +379,7 @@ module.exports = {
   expandNotifications,
   pushFile,
   installApk,
-  takeScreenshot
+  takeScreenshot,
+  getDeviceInfo,
+  getScreenPreview
 };

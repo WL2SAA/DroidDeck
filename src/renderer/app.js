@@ -5,8 +5,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerDeviceDisplay = document.getElementById('header-device-display');
   const topDeviceName = document.getElementById('top-device-name');
   const topDeviceBadge = document.getElementById('top-device-badge');
+  const topBatteryPill = document.getElementById('top-battery-pill');
+  const topBatteryText = document.getElementById('top-battery-text');
+  const topOsPill = document.getElementById('top-os-pill');
+  const topOsText = document.getElementById('top-os-text');
+  const btnDeviceInfo = document.getElementById('btn-device-info');
   const badgeAdb = document.getElementById('badge-adb');
   const badgeScrcpy = document.getElementById('badge-scrcpy');
+
+  // Preview Card Elements
+  const sectionPreview = document.getElementById('section-preview');
+  const previewLiveTag = document.getElementById('preview-live-tag');
+  const btnRefreshPreview = document.getElementById('btn-refresh-preview');
+  const toggleAutoPreview = document.getElementById('toggle-auto-preview');
+  const previewPlaceholder = document.getElementById('preview-placeholder');
+  const previewImg = document.getElementById('preview-img');
+
+  // Device Info Modal Elements
+  const deviceInfoModal = document.getElementById('device-info-modal');
+  const btnCloseSpecs = document.getElementById('btn-close-specs');
+  const btnCopyIp = document.getElementById('btn-copy-ip');
+  const specManufacturer = document.getElementById('spec-manufacturer');
+  const specModel = document.getElementById('spec-model');
+  const specAndroid = document.getElementById('spec-android');
+  const specAbi = document.getElementById('spec-abi');
+  const specBattery = document.getElementById('spec-battery');
+  const specDisplay = document.getElementById('spec-display');
+  const specStorage = document.getElementById('spec-storage');
+  const specIp = document.getElementById('spec-ip');
 
   // Device Selection
   const deviceSelect = document.getElementById('device-select');
@@ -74,6 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   let currentDevices = [];
   let activeDevice = null;
+  let activeDeviceInfo = null;
+  let autoPreviewTimer = null;
 
   // Keycode mapping for Android hardware controls
   const keycodeMap = {
@@ -208,13 +236,163 @@ document.addEventListener('DOMContentLoaded', () => {
       headerDeviceDisplay.className = 'device-pill';
       topDeviceName.textContent = 'No Device Connected';
       topDeviceBadge.textContent = 'OFFLINE';
+      topBatteryPill.classList.add('hidden');
+      topOsPill.classList.add('hidden');
+      btnDeviceInfo.classList.add('hidden');
+      clearScreenPreview();
+      activeDeviceInfo = null;
       return;
     }
 
     headerDeviceDisplay.className = 'device-pill connected';
     topDeviceName.textContent = `${dev.model}`;
     topDeviceBadge.textContent = dev.isWireless ? 'WI-FI' : 'USB';
+    btnDeviceInfo.classList.remove('hidden');
+
+    // Trigger asynchronous fetch of full specs & battery
+    fetchDeviceInfo(dev.serial);
+
+    // If auto-preview is enabled or preview is visible, refresh snapshot
+    fetchScreenPreview(dev.serial);
   }
+
+  // Fetch full device specifications
+  async function fetchDeviceInfo(serial) {
+    try {
+      const info = await window.api.getDeviceInfo(serial);
+      activeDeviceInfo = info;
+
+      // Update Topbar Battery Pill
+      if (info.battery && info.battery.level !== undefined) {
+        topBatteryText.textContent = `${info.battery.level}%${info.battery.charging ? ' ⚡' : ''}`;
+        topBatteryPill.classList.remove('hidden');
+        if (info.battery.charging) {
+          topBatteryPill.classList.add('charging');
+        } else {
+          topBatteryPill.classList.remove('charging');
+        }
+      }
+
+      // Update Topbar OS Pill
+      if (info.androidVersion && info.androidVersion !== 'Unknown') {
+        topOsText.textContent = `Android ${info.androidVersion}`;
+        topOsPill.classList.remove('hidden');
+      }
+
+      // Auto-populate Wireless IP if available and field is empty
+      if (info.network && info.network.ip && !inputIp.value.trim()) {
+        inputIp.placeholder = info.network.ip;
+      }
+
+      log(`Device Specs loaded: ${info.model} (Android ${info.androidVersion}, Batt: ${info.battery.level}%)`, 'system');
+    } catch (err) {
+      log(`Could not load detailed device specs: ${err.message}`, 'system');
+    }
+  }
+
+  // Fetch quick snapshot for preview card
+  async function fetchScreenPreview(serial) {
+    if (!serial || serial === 'auto') return;
+    previewLiveTag.textContent = 'FETCHING';
+
+    try {
+      const dataUri = await window.api.getScreenPreview(serial);
+      previewImg.src = dataUri;
+      previewImg.classList.remove('hidden');
+      previewPlaceholder.classList.add('hidden');
+      previewLiveTag.textContent = 'ACTIVE';
+      previewLiveTag.classList.add('active');
+    } catch (err) {
+      previewLiveTag.textContent = 'IDLE';
+      previewLiveTag.classList.remove('active');
+    }
+  }
+
+  function clearScreenPreview() {
+    previewImg.classList.add('hidden');
+    previewPlaceholder.classList.remove('hidden');
+    previewLiveTag.textContent = 'IDLE';
+    previewLiveTag.classList.remove('active');
+    if (autoPreviewTimer) {
+      clearInterval(autoPreviewTimer);
+      autoPreviewTimer = null;
+      toggleAutoPreview.checked = false;
+    }
+  }
+
+  // Device Info Modal Handler
+  btnDeviceInfo.addEventListener('click', () => {
+    if (!activeDeviceInfo && activeDevice) {
+      fetchDeviceInfo(activeDevice.serial);
+    }
+
+    if (activeDeviceInfo) {
+      specManufacturer.textContent = activeDeviceInfo.manufacturer || '--';
+      specModel.textContent = activeDeviceInfo.model || '--';
+      specAndroid.textContent = activeDeviceInfo.androidVersion ? `Android ${activeDeviceInfo.androidVersion} (API ${activeDeviceInfo.sdk || '--'})` : '--';
+      specAbi.textContent = activeDeviceInfo.abi || '--';
+      specBattery.textContent = `${activeDeviceInfo.battery.level}% (${activeDeviceInfo.battery.status}${activeDeviceInfo.battery.charging ? ', Charging' : ''})`;
+      specDisplay.textContent = activeDeviceInfo.display.resolution !== 'Unknown' ? `${activeDeviceInfo.display.resolution} (${activeDeviceInfo.display.density || ''} dpi)` : '--';
+      specStorage.textContent = activeDeviceInfo.storage.size ? `${activeDeviceInfo.storage.used} used / ${activeDeviceInfo.storage.available} free (${activeDeviceInfo.storage.percent})` : '--';
+      specIp.textContent = activeDeviceInfo.network.ip || 'Not connected to Wi-Fi';
+
+      if (activeDeviceInfo.network.ip) {
+        btnCopyIp.classList.remove('hidden');
+      } else {
+        btnCopyIp.classList.add('hidden');
+      }
+    } else {
+      specManufacturer.textContent = '--';
+      specModel.textContent = activeDevice ? activeDevice.model : '--';
+      specAndroid.textContent = '--';
+      specAbi.textContent = '--';
+      specBattery.textContent = 'Querying...';
+      specDisplay.textContent = '--';
+      specStorage.textContent = '--';
+      specIp.textContent = '--';
+    }
+
+    deviceInfoModal.classList.remove('hidden');
+  });
+
+  btnCopyIp.addEventListener('click', () => {
+    if (activeDeviceInfo && activeDeviceInfo.network.ip) {
+      inputIp.value = activeDeviceInfo.network.ip;
+      deviceInfoModal.classList.add('hidden');
+      log(`Inserted Wi-Fi IP ${activeDeviceInfo.network.ip} into wireless connection field`);
+    }
+  });
+
+  btnCloseSpecs.addEventListener('click', () => {
+    deviceInfoModal.classList.add('hidden');
+  });
+
+  // Preview Card Controls
+  btnRefreshPreview.addEventListener('click', () => {
+    if (activeDevice) {
+      fetchScreenPreview(activeDevice.serial);
+    }
+  });
+
+  toggleAutoPreview.addEventListener('change', () => {
+    if (toggleAutoPreview.checked) {
+      if (activeDevice) {
+        fetchScreenPreview(activeDevice.serial);
+      }
+      autoPreviewTimer = setInterval(() => {
+        if (activeDevice) {
+          fetchScreenPreview(activeDevice.serial);
+        }
+      }, 2500);
+      log('Live screen preview auto-refresh started (2.5s interval)');
+    } else {
+      if (autoPreviewTimer) {
+        clearInterval(autoPreviewTimer);
+        autoPreviewTimer = null;
+      }
+      log('Live screen preview auto-refresh paused');
+    }
+  });
 
   deviceSelect.addEventListener('change', () => {
     const selectedSerial = deviceSelect.value;

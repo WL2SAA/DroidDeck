@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   pushFile: (serial, filePath, remotePath) => ipcRenderer.invoke('push-file', { serial, filePath, remotePath }),
   installApk: (serial, apkPath) => ipcRenderer.invoke('install-apk', { serial, apkPath }),
   takeScreenshot: (serial) => ipcRenderer.invoke('take-screenshot', { serial }),
+  getDeviceInfo: (serial) => ipcRenderer.invoke('get-device-info', { serial }),
+  getScreenPreview: (serial) => ipcRenderer.invoke('get-screen-preview', { serial }),
   openFileDialog: (options) => ipcRenderer.invoke('open-file-dialog', options),
   launchScrcpy: (options) => ipcRenderer.invoke('launch-scrcpy', options),
   stopScrcpy: () => ipcRenderer.invoke('stop-scrcpy'),
