@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DroidDeck</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- Top Navigation & Prominent Device Banner -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <span class="brand-name">DroidDeck</span>
+        <span class="brand-version">1.0</span>
+      </div>
+
+      <!-- Prominent Active Device Display on Top (No scrcpy minimal text) -->
+      <div class="device-pill" id="header-device-display">
+        <span class="device-dot" id="header-live-dot"></span>
+        <span class="device-title" id="top-device-name">No Device Connected</span>
+        <span class="device-badge" id="top-device-badge">OFFLINE</span>
+      </div>
+
+      <div class="topbar-right">
+        <div class="system-status">
+          <span class="status-pill" id="badge-adb" title="ADB daemon status">adb</span>
+          <span class="status-pill" id="badge-scrcpy" title="scrcpy binary status">scrcpy</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Device Remote Strip (Hardware & Navigation Controls) -->
+    <nav class="remote-strip">
+      <div class="remote-items">
+        <button class="remote-item" data-key="back" title="Back (KEYCODE_BACK)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Back</span>
+        </button>
+        <button class="remote-item" data-key="home" title="Home (KEYCODE_HOME)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          </svg>
+          <span>Home</span>
+        </button>
+        <button class="remote-item" data-key="recents" title="Recent Apps (KEYCODE_APP_SWITCH)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="5" width="14" height="14" rx="2"></rect>
+          </svg>
+          <span>Recents</span>
+        </button>
+
+        <span class="remote-sep"></span>
+
+        <button class="remote-item" data-key="power" title="Power / Lock (KEYCODE_POWER)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+            <line x1="12" y1="2" x2="12" y2="12"></line>
+          </svg>
+          <span>Power</span>
+        </button>
+        <button class="remote-item" data-key="voldown" title="Volume Down (KEYCODE_VOLUME_DOWN)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="16" y1="12" x2="22" y2="12"></line>
+          </svg>
+          <span>Vol -</span>
+        </button>
+        <button class="remote-item" data-key="volup" title="Volume Up (KEYCODE_VOLUME_UP)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <span>Vol +</span>
+        </button>
+
+        <span class="remote-sep"></span>
+
+        <button class="remote-item" data-key="notifs" title="Notification shade">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span>Notifs</span>
+        </button>
+        <button class="remote-item" data-key="screenshot" id="btn-ctrl-screenshot" title="Save screenshot to computer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Screenshot</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Workspace (Auto-organizes in fullscreen / window resize) -->
+    <main class="app-main">
+      
+      <!-- Module 1: Connection & Pairing -->
+      <section class="card card-connection">
+        <div class="card-header">
+          <span class="card-title">Connection</span>
+          <span id="device-count-badge" class="badge-subtle">0 devices</span>
+        </div>
+
+        <div class="field-stack">
+          <label class="label" for="device-select">Target Device</label>
+          <div class="row">
+            <div class="select-container">
+              <select id="device-select" class="input select">
+                <option value="auto">Auto-detect primary device</option>
+              </select>
+              <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <button id="btn-refresh-devices" class="btn btn-secondary btn-icon" title="Scan devices">
+              <svg class="icon-refresh" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+            <button id="btn-tcpip-mode" class="btn btn-secondary" title="Enable wireless TCP/IP mode on USB device">
+              TCP/IP
+            </button>
+          </div>
+        </div>
+
+        <div class="field-stack">
+          <div class="label-row">
+            <label class="label">Wireless ADB</label>
+            <span class="label-hint">:5555</span>
+          </div>
+          <div class="row">
+            <input id="input-ip" type="text" class="input font-mono" placeholder="192.168.1.100" />
+            <input id="input-port" type="number" class="input font-mono port-field" value="5555" />
+          </div>
+          <div class="row">
+            <button id="btn-connect-wireless" class="btn btn-secondary btn-full">Connect Wi-Fi</button>
+            <button id="btn-disconnect-wireless" class="btn btn-ghost">Disconnect</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 2: Display & Streaming Settings -->
+      <section class="card card-display">
+        <div class="card-header">
+          <span class="card-title">Display & Flags</span>
+        </div>
+
+        <!-- Setting Items List -->
+        <div class="toggles-list">
+          <label class="toggle-item">
+            <div class="toggle-texts">
+              <span class="toggle-label">Turn screen off</span>
+              <span class="toggle-code">--turn-screen-off</span>
+            </div>
+            <input type="checkbox" id="toggle-turn-screen-off" class="switch-native" />
+          </label>
+
+          <label class="toggle-item">
+            <div class="toggle-texts">
+              <span class="toggle-label">Stay awake</span>
+              <span class="toggle-code">--stay-awake</span>
+            </div>
+            <input type="checkbox" id="toggle-stay-awake" class="switch-native" checked />
+          </label>
+
+          <label class="toggle-item">
+            <div class="toggle-texts">
+              <span class="toggle-label">Disable audio</span>
+              <span class="toggle-code">--no-audio</span>
+            </div>
+            <input type="checkbox" id="toggle-no-audio" class="switch-native" />
+          </label>
+
+          <label class="toggle-item">
+            <div class="toggle-texts">
+              <span class="toggle-label">Always on top</span>
+              <span class="toggle-code">--always-on-top</span>
+            </div>
+            <input type="checkbox" id="toggle-always-on-top" class="switch-native" />
+          </label>
+
+          <label class="toggle-item">
+            <div class="toggle-texts">
+              <span class="toggle-label">Show touches</span>
+              <span class="toggle-code">--show-touches</span>
+            </div>
+            <input type="checkbox" id="toggle-show-touches" class="switch-native" />
+          </label>
+        </div>
+
+        <hr class="separator" />
+
+        <!-- Segmented Controls for Resolution and Bitrate -->
+        <div class="segment-stack">
+          <div class="label-row">
+            <label class="label">Max Resolution</label>
+            <span id="resolution-value-display" class="label-hint">1080p</span>
+          </div>
+          <div class="segmented-control" id="resolution-segments">
+            <button type="button" class="segment" data-val="0">720p</button>
+            <button type="button" class="segment active" data-val="1">1080p</button>
+            <button type="button" class="segment" data-val="2">1440p</button>
+            <button type="button" class="segment" data-val="3">Native</button>
+          </div>
+          <input type="hidden" id="slider-resolution" value="1" />
+        </div>
+
+        <div class="segment-stack">
+          <div class="label-row">
+            <label class="label">Bitrate</label>
+            <span class="label-hint"><span id="bitrate-display">8</span> Mbps</span>
+          </div>
+          <div class="segmented-control" id="bitrate-segments">
+            <button type="button" class="segment" data-bitrate="4">4M</button>
+            <button type="button" class="segment active" data-bitrate="8">8M</button>
+            <button type="button" class="segment" data-bitrate="12">12M</button>
+            <button type="button" class="segment" data-bitrate="16">16M</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Module 3: File Transfer & APK Push -->
+      <section class="card card-transfer">
+        <div class="card-header">
+          <span class="card-title">File Transfer</span>
+          <span class="label-hint">/sdcard/Download/</span>
+        </div>
+
+        <div class="transfer-box-wrap">
+          <div id="drop-zone" class="drop-target">
+            <div class="drop-content">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="drop-icon">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <div class="drop-text">Drag & drop files or APKs here</div>
+              <div class="drop-subtext">Directly pushed to Android device storage</div>
+            </div>
+            <div class="drop-btns">
+              <button id="btn-browse-files" class="btn btn-secondary btn-sm">Choose Files</button>
+              <button id="btn-browse-apk" class="btn btn-secondary btn-sm">Install APK</button>
+            </div>
+          </div>
+
+          <div id="transfer-status" class="transfer-alert hidden">
+            <div class="transfer-spinner"></div>
+            <span id="transfer-status-text">Transferring...</span>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span class="status-dot"></span>
+        <span id="stream-state-text" class="status-msg">Ready to mirror</span>
+        <button id="btn-toggle-terminal" class="btn btn-ghost btn-xs">Console</button>
+      </div>
+
+      <div class="footer-right">
+        <button id="btn-kill-adb" class="btn btn-ghost" title="Restart ADB server">Reset ADB</button>
+        <button id="btn-stop-stream" class="btn btn-danger hidden">Stop Mirror</button>
+        <button id="btn-launch-scrcpy" class="btn btn-primary">
+          <span id="btn-launch-text">Launch Mirror</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Terminal Drawer (Collapsible) -->
+    <div id="terminal-drawer" class="terminal-drawer collapsed">
+      <div class="terminal-top">
+        <span class="terminal-title">Diagnostics Output</span>
+        <button id="btn-clear-logs" class="btn btn-ghost btn-xs">Clear</button>
+      </div>
+      <div id="terminal-output" class="terminal-log">
+        <div class="log-item system">[system] DroidDeck ready.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Minimal Modal Alert -->
+  <div id="modal-overlay" class="modal-backdrop hidden">
+    <div class="modal-box">
+      <div class="modal-title-row">
+        <span class="modal-tag">Notice</span>
+        <h3 id="modal-title" class="modal-title">Alert</h3>
+      </div>
+      <p id="modal-message" class="modal-body"></p>
+      <div id="modal-guide" class="modal-code"></div>
+      <div class="modal-actions">
+        <button id="modal-btn-confirm" class="btn btn-primary">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
